@@ -1,0 +1,10 @@
+{
+  "vulnerabilities_list": [
+    {
+      "name" : "RE",
+      "contracts_dir" : "contracts/RE_random_500/",
+      "report_json_path" : "contracts/RE_random_500/RE_random_500.json",
+      "done": "false"
+    }
+  ]
+}

@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>漏洞报告分析</title>
+
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="assets/images/favicon-32x32.png" type="image/png" />
+    <!--plugins-->
+    <link href="assets/plugins/vectormap/jquery-jvectormap-2.0.2.css" rel="stylesheet"/>
+    <link href="assets/plugins/simplebar/css/simplebar.css" rel="stylesheet" />
+    <link href="assets/plugins/perfect-scrollbar/css/perfect-scrollbar.css" rel="stylesheet" />
+    <link href="assets/plugins/metismenu/css/metisMenu.min.css" rel="stylesheet" />
+    <!-- Bootstrap CSS -->
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="assets/css/bootstrap-extended.css" rel="stylesheet" />
+    <link href="assets/css/style.css" rel="stylesheet" />
+    <link href="assets/css/icons.css" rel="stylesheet">
+    <!-- loader-->
+    <link href="assets/css/pace.min.css" rel="stylesheet" />
+    <!--Theme Styles-->
+    <link href="assets/css/dark-theme.css" rel="stylesheet" />
+    <link href="assets/css/light-theme.css" rel="stylesheet" />
+    <link href="assets/css/semi-dark.css" rel="stylesheet" />
+    <link href="assets/css/header-colors.css" rel="stylesheet" />
+    <!-- markdown CSS -->
+    <link rel="stylesheet" href="editor.md/css/editormd.css" />
+
+</head>
+<body>
+
+<div class="row align  align-items-start">
+
+    <div class="col-4">
+        <div class="card">
+            <!--当前分析概况 -->
+            <div class="card-body border-bottom">
+                <div class="container text-center">
+                    <!--当前分析的漏洞类型-->
+                    <div class="row align-items-center">
+
+                        <div class="col-8">
+                            <h5 class="card-title align-content-center" id="current_vulnerability_type">请点击开始分析</h5>
+                        </div>
+                        <div class="col-4">
+                            <button class="btn btn-warning" id="start">开始</button>
+                        </div>
+                    </div>
+                    <!--当前分析的漏洞类型-->
+                </div>
+            </div>
+            <!--当前分析概况 -->
+
+            <!--当前分析进度 -->
+            <ul class="list-group list-group-flush">
+                <!--                进度-->
+                <li class="list-group-item" id="progress"></li>
+                <!--                当前合约地址-->
+                <li class="list-group-item" id="contract_address">
+                    当前合约:
+                </li>
+                <li class="list-group-item" id="report_lines">
+                    报告列表:
+                </li>
+                <!--                当前报告-->
+                <li class="list-group-item">
+                    <div class="row">
+                        <div class="col-6" id="current_report">漏洞报告: </div>
+                    </div>
+                </li>
+            </ul>
+            <!--当前分析进度 -->
+
+        </div>
+    </div>
+
+    <div class="col-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="1" id="check1">
+                    <label class="form-check-label" for="check1">1.权限控制（身份控制）</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="2" id="check2">
+                    <label class="form-check-label" for="check2">1.权限控制（地址控制）</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="4" id="check3">
+                    <label class="form-check-label" for="check3">1.权限控制（重入锁）</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="8" id="check4">
+                    <label class="form-check-label" for="check4">2.外部调用后无状态变量修改</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="16" id="check5">
+                    <label class="form-check-label" for="check5">3.状态变量修改没有经济风险</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="32" id="check6">
+                    <label class="form-check-label" for="check6">4.转账金额是msg.value</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="64" id="check7">
+                    <label class="form-check-label" for="check7">5.外部调用是transfer或send</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="128" id="check8">
+                    <label class="form-check-label" for="check8">6.是构造函数</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-4">
+        <div class="card">
+            <div class="card-body">
+
+                <input class="form-control mb-3" type="text" placeholder="合约名称" aria-label="合约名称" id="contract_name">
+                <input class="form-control mb-3" type="text" placeholder="函数名称" aria-label="函数名称" id="function_name">
+                <input class="form-control mb-3" type="text" placeholder="代码行" aria-label="代码行" id="line_number">
+
+            </div>
+            <div class="card-body border-top">
+                <div class="row">
+                    <div class="col-4">
+                        <button type="button" class="btn btn-primary" id="next_report">下一个报告</button>
+                    </div>
+                    <div class="col-4">
+                        <!-- Button trigger modal -->
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleScrollableModal" id="show_result">当前分析结果</button>
+                    </div>
+
+                    <div class="col-4">
+                        <button type="button" class="btn btn-danger" id="need_review">需要复核</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="row">
+    <!--左侧代码显示-->
+    <div class="col-lg-7">
+        <div class="card">
+            <div id="test-editor">
+                <textarea style="display:none;" id="contract" class="editormd-markdown-textarea"></textarea>
+            </div>
+        </div>
+    </div>
+    <!--左侧代码显示-->
+
+    <!--右侧漏洞报告显示-->
+    <div class="col-lg-5">
+        <div class="card">
+            <div id="report-editor">
+                <textarea style="display:none;" id="report" class="editormd-markdown-textarea"></textarea>
+            </div>
+        </div>
+    </div>
+    <!--右侧漏洞报告显示-->
+</div>
+
+
+
+
+<!-- Modal -->
+<div class="modal fade" id="exampleScrollableModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" id="modal_title">以下为当前分析结果JSON</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="result_json">
+
+            </div>
+            <div class="modal-footer">
+<!--                <button type="button" class="btn btn-primary" id="copy_result">保存当前分析结果到剪切板</button>-->
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<!-- Bootstrap bundle JS -->
+<script src="assets/js/bootstrap.bundle.min.js"></script>
+<!--editormd-->
+<script src="js/jquery.min.js"></script>
+<script src="editor.md/editormd.min.js"></script>
+
+<script type="text/javascript">
+
+    let editor; // 编辑器
+    let report_editor; // 报告编辑器
+    let configuration; // 配置文件
+    let resume = false; // 当前是否开始分析
+
+    let current_vulnerability_name = undefined; // 当前漏洞名字
+    let current_vulnerability_index = 0;  // 当前漏洞索引
+    let project; // 待分析项目 包含合约、报告、已分析合约、待复核合约
+    let contracts; // 待分析合约列表
+    let current_contract_index; // 当前合约索引
+    let current_contract_address; // 当前合约地址
+    let current_contract_code; // 当前合约代码
+    let reports; // 当前合约的漏洞报告列表   (一个合约对应多个漏洞报告，一个漏洞报告对应一个代码行)
+    let current_report; // 当前报告
+    let current_report_index; // 当前报告索引
+
+    let analyzed_contracts_address = []; // 已分析的合约地址列表
+    let need_review_address = []
+    let total_contracts_count = 0; // 总合约数
+    let analyzed_contracts_count = 0;  // 已分析合约数量
+
+    let file_type = {'oyente': ".txt", 'mythril': ".txt", 'securify1': ".json", 'securify2': ".txt",
+        'smartian': ".json", 'sailfish': ".json"}
+    let current_report_file;
+    let current_report_content;
+    let current_contract_results = [];
+
+
+    // 页面加载
+    $(function() {
+        $.ajaxSettings.async = false; // 全局ajax同步
+        //配置文件
+        $.getJSON('./config.json', function (data) {
+            configuration = data;
+        });
+        editor = editormd("test-editor", {
+            width  : "100%",
+            // height : "100%",
+            height: 740,
+            watch : false,      //关闭预览
+            toolbar  : false,   //关闭工具栏
+            path   : "editor.md/lib/"
+        });
+        report_editor = editormd("report-editor", {
+            width  : "100%",
+            // height : "100%",
+            height: 740,
+            watch : false,      //关闭预览
+            toolbar  : false,   //关闭工具栏
+            path   : "editor.md/lib/"
+        });
+    });
+
+    //开始分析
+    $("#start").bind("click", function() {
+        // 已经开始
+        if (resume) {
+            alert("已经开始分析了")
+            return;
+        }
+        resume = true;
+        //当前漏洞类型
+        for(let i = 0; i < configuration.vulnerabilities_list.length; ++i) {
+            if (configuration.vulnerabilities_list[i].done === "false") {
+                current_vulnerability_name = configuration.vulnerabilities_list[i].name;
+                current_vulnerability_index = i;
+                $.getJSON(configuration.vulnerabilities_list[i].report_json_path, function (data) {
+                    project = data;
+                    contracts = project.contracts;
+                    total_contracts_count = project.contracts.length;
+                    // console.log(contracts)
+                })
+            }
+        }
+        $("#current_vulnerability_type").text("当前漏洞类型:" + current_vulnerability_name)
+        // 读取进度并显示
+        analyzed_contracts_address = project.analyzed_contracts_address;
+        need_review_address = project.need_review_address;
+        analyzed_contracts_count = analyzed_contracts_address.length;
+        $("#progress").text("当前已分析合约数量: " + analyzed_contracts_count + '/' + total_contracts_count +
+            ' 进度: [' + (analyzed_contracts_count/total_contracts_count * 100).toFixed(1) + '%]')
+        // 确定下一个要分析的合约并显示
+        for (current_contract_index = 0; current_contract_index < total_contracts_count; ++current_contract_index) {
+            if ($.inArray(contracts[current_contract_index].address, analyzed_contracts_address) !== -1) {
+                continue;
+            }
+            current_contract_address = contracts[current_contract_index].address
+            break;
+        }
+        $("#contract_address").text("当前合约: " + current_contract_address)
+        $.ajax({
+            url: configuration.vulnerabilities_list[current_vulnerability_index].contracts_dir + '/' + current_contract_address + '/contract.sol',
+            async: false,
+            dataType: 'text',
+            success: function(data) {
+                current_contract_code = data;
+            }
+        });
+        show_code(current_contract_code)
+
+        // 加载报告和当前报告
+        reports = contracts[current_contract_index].reports;
+        current_report_index = 0;
+        current_report = reports[current_report_index];
+        current_report_file = current_report + file_type[current_report];
+        $("#current_report").text("漏洞报告: " + (current_report_index + 1) +'/' + reports.length);
+        // 报告列表
+        let string = "报告列表: ";
+        for (let i = 0; i < reports.length; ++i) {
+            if (i !== 0) {
+                string += ", ";
+            }
+            string += reports[i] + file_type[reports[i]];
+            if (current_report_index === i) {
+                string += "(当前)";
+            }
+        }
+        $("#report_lines").text(string)
+        // 显示
+        $.ajax({
+            url: configuration.vulnerabilities_list[current_vulnerability_index].contracts_dir + '/' + current_contract_address + '/' + current_report_file,
+            async: false,
+            dataType: 'text',
+            success: function(data) {
+                current_report_content = data;
+            }
+        });
+        show_report(current_report_content)
+    })
+
+    // 定位到代码行
+    // $("#goto_line").bind("click", function(){
+    //     // 需要已经开始分析
+    //     if (!resume) {
+    //         alert("未开始分析")
+    //         return;
+    //     }
+    //     editor.gotoLine(parseInt(current_report.line));
+    // });
+
+    // 下一个报告
+    $("#next_report").bind("click", function () {
+        // 需要已经开始分析
+        if (!resume) {
+            alert("未开始分析")
+            return;
+        }
+        // 收集当前分析
+        let result = 0;
+        $('input:checkbox:checked').each(function(){　
+            result += parseInt($(this).val());// 选中框中的值
+            $(this).prop('checked', false);
+        });
+
+        // 判断当前分析是否合法
+        if (!is_legal(result)) {
+            alert("分析结果不合法");
+            return;
+        }
+
+        // 保存当前分析
+        let contract_name = $("#contract_name").val();
+        if (contract_name === '' || current_contract_code.indexOf(contract_name) === -1) {
+            alert("合约名称不存在")
+            return;
+        }
+        let function_name = $("#function_name").val();
+        if (function_name === '' || current_contract_code.indexOf(function_name) === -1) {
+            alert("函数名称不存在")
+            return;
+        }
+        let line_number = parseInt($("#line_number").val())
+        if (isNaN(line_number) || line_number <= 0 || line_number > current_contract_code.split('\n').length) {
+            alert("行数范围不合法,合法范围: [1, " + current_contract_code.split('\n').length + "]");
+            return
+        }
+
+        $("#contract_name").val("");
+        $("#function_name").val("");
+        $("#line_number").val("");
+
+        let current_report_result = {"result": -1, "tool_name": '', "contract_name": '',
+            "function_name": '', "line_number": -1};
+        current_report_result.result = result;
+        current_report_result.tool_name = reports[current_report_index]
+        current_report_result.contract_name = contract_name;
+        current_report_result.function_name = function_name;
+        current_report_result.line_number = line_number;
+        current_contract_results.push(current_report_result)
+        contracts[current_contract_index]["result"] = current_contract_results
+        project.contracts = contracts;
+
+        // 跳转下一个报告
+            // 本合约未分析完
+        if (current_report_index + 1 < reports.length) {
+            ++current_report_index;
+            current_report = reports[current_report_index];
+            current_report_file = current_report + file_type[current_report];
+            let string = "报告列表: ";
+            for (let i = 0; i < reports.length; ++i) {
+                if (i !== 0) {
+                    string += ", ";
+                }
+                string += reports[i] + file_type[reports[i]];
+                if (current_report_index === i) {
+                    string += "(当前)";
+                }
+            }
+            $("#report_lines").text(string)
+            $.ajax({
+                url: configuration.vulnerabilities_list[current_vulnerability_index].contracts_dir + '/' + current_contract_address + '/' + current_report_file,
+                async: false,
+                dataType: 'text',
+                success: function(data) {
+                    current_report_content = data;
+                }
+            });
+            show_report(current_report_content)
+            $("#current_report").text("漏洞报告: " + (current_report_index + 1) +'/' + reports.length);
+            return;
+        }
+            // 本合约已分析完
+                // 没分析完所有合约,跳转下一个合约,显示合约和第一个报告
+        if (current_contract_index + 1 < total_contracts_count) {
+            current_contract_results = [];
+            analyzed_contracts_address.push(current_contract_address)
+            ++analyzed_contracts_count;
+                // 确定下一个要分析的合约并显示
+            for (; current_contract_index < total_contracts_count; ++current_contract_index) {
+                if ($.inArray(contracts[current_contract_index].address, analyzed_contracts_address) !== -1) {
+                    continue;
+                }
+                current_contract_address = contracts[current_contract_index].address
+                reports = contracts[current_contract_index].reports;
+                current_report_index = 0;
+                current_report = reports[current_report_index];
+                current_report_file = current_report + file_type[current_report];
+                break;
+            }
+            $("#contract_address").text("当前合约: " + current_contract_address)
+            // $("#current_line").text("当前报告行: " + current_report.line)
+            $("#current_report").text("漏洞报告: " + (current_report_index + 1) +'/' + reports.length);
+            $("#progress").text("当前已分析合约数量: " + analyzed_contracts_count + '/' + total_contracts_count +
+                ' 进度: [' + (analyzed_contracts_count/total_contracts_count * 100).toFixed(1) + '%]')
+            $.ajax({
+                url: configuration.vulnerabilities_list[current_vulnerability_index].contracts_dir + '/' + current_contract_address + '/contract.sol',
+                async: false,
+                dataType: 'text',
+                success: function(data) {
+                    current_contract_code = data;
+                }
+            });
+            show_code(current_contract_code)
+            $.ajax({
+                url: configuration.vulnerabilities_list[current_vulnerability_index].contracts_dir + '/' + current_contract_address + '/' + current_report_file,
+                async: false,
+                dataType: 'text',
+                success: function(data) {
+                    current_report_content = data;
+                }
+            });
+            show_report(current_report_content)
+            // 报告列表
+            let string = "报告列表: ";
+            for (let i = 0; i < reports.length; ++i) {
+                if (i !== 0) {
+                    string += ", ";
+                }
+                string += reports[i] + file_type[reports[i]];
+                if (current_report_index === i) {
+                    string += "(当前)";
+                }
+            }
+            $("#report_lines").text(string)
+            return;
+        }
+        // 所有合约已分析完
+        if (current_contract_index + 1 >= total_contracts_count || analyzed_contracts_count === total_contracts_count) {
+            analyzed_contracts_address.push(current_contract_address)
+            alert("本项目合约已分析完毕")
+        }
+
+    })
+
+    $("#need_review").bind("click", function () {
+        // 需要已经开始分析
+        if (!resume) {
+            alert("未开始分析")
+            return;
+        }
+        // 当前合约加入待复核地址列表
+        if ($.inArray(current_contract_address, need_review_address) === -1) {
+            need_review_address.push(current_contract_address);
+        }
+        alert("已添加")
+    })
+
+    // 显示分析结果json
+    $("#show_result").bind("click", function () {
+        // 需要已经开始分析
+        if (!resume) {
+            alert("未开始分析")
+            return;
+        }
+        $("#modal_title").text("JSON已同时打印至控制台,如要保存请复制并代替" + configuration.vulnerabilities_list[current_vulnerability_index].report_json_path)
+        $("#result_json").text("")
+        $("#result_json").text(JSON.stringify(project))
+        console.log(project)
+    })
+
+
+
+    // 显示合约
+    function show_code(code) {
+        editor = editormd("test-editor", {
+            width  : "100%",
+            // height : "100%",
+            height: 740,
+            watch : false,      //关闭预览
+            toolbar  : false,   //关闭工具栏
+            markdown: code,
+            path   : "editor.md/lib/"
+        });
+    }
+
+    function  show_report(report) {
+        report_editor = editormd("report-editor", {
+            width  : "100%",
+            // height : "100%",
+            height: 740,
+            watch : false,      //关闭预览
+            toolbar  : false,   //关闭工具栏
+            markdown: report,
+            path   : "editor.md/lib/"
+        });
+    }
+
+    // 判断分析是否合法
+    function is_legal(num) {
+        return (num !== 0);
+    }
+
+
+</script>
+</body>
+</html>
